@@ -1,0 +1,56 @@
+TODO popuniti odgovorima na pitanja iz problema 1
+
+
+a)Normalizacija i regularizacija
+
+	-Normalizaciju koristimo u situacijama kada atributi mogu imati vrednosti u opsezima koji se znacajno
+	mogu razlikovati. Implementiramo je tako sto od niza koji zelimo da normalizujemo oduzmemo srednju vrednost elemenata
+	i dobijenu vrednost zatim podelimo sa standardnom devijacijom tog niza
+
+	-Regularizacija je oblik regresije, koji regulise vrednost koeficijenata koji stoje uz 'feature' i na taj nacin smanjuje mogucnost da se dogodi
+	'overfitting'
+
+b)Precision i Recall
+	
+	#Precision predstavlja procenat tacno pozitivnih u skupu svih vrednosti koje su okarakterisane kao pozitivne
+	
+		-Precision =  TP / (TP + FP)
+
+	#Recall predstavlja procenat tacno pozitivnih u skupu svih vrednosti koje su zaista pozitivne
+
+		-Recall=  TP / (TP + FN)
+
+	#Kada imamo visok Precision, a mali Recall znaci da je model dobar u predikciji pozitivne klase, ali prediktuje jako mali broj onih koji su zaista
+	pozitivni.
+
+	#Kada imamo visok Recall, a mali Precision znaci da model dobro  prediktuje one koji su zaista pozitivni, ali isto tako u pozitivne smesta i dosta
+	onih koji su zaista negativni 
+
+
+	
+c)FP i FN
+
+	FP(false positive) = primeri iz klase 0  koje nas model greskom dodaje u klasu 1
+	FN(false negative)= primeri iz klase 1  koje nas model greskom dodaje u klasu 0
+
+	#Sto manje FP čak i na račun povecanja FN:
+
+		-spam poruke koje dobijamo putem maila
+	
+		-detekcija provaljivanja u kucu
+
+		-paljenje alarma na automobilima
+
+
+
+
+	#Sto manje FN čak i na račun povecanja FP:
+
+		-detekcija razlicitih vrsta kancera
+	
+		-HIV test
+
+		-lociranje virusa putem antivirusa na racunaru
+
+
+

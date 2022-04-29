@@ -1,0 +1,163 @@
+# TODO popuniti kodom za problem 3a
+%tensorflow_version 1.x
+
+import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsRegressor
+from matplotlib.colors import ListedColormap
+cmap = ListedColormap(['#FF0000','#00FF00','#0000FF'])
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+
+%matplotlib inline
+
+class KNN:
+  
+  def __init__(self, nb_features, nb_classes, data, k, weighted = False):
+    self.nb_features = nb_features
+    self.nb_classes = nb_classes
+    self.data = data
+    self.k = k
+    self.weight = weighted
+    
+    # Gradimo model, X je matrica podataka a Q je vektor koji predstavlja upit.
+    self.X = tf.placeholder(shape=(None, nb_features), dtype=tf.float32)
+    self.Y = tf.placeholder(shape=(None), dtype=tf.int32)
+    self.Q = tf.placeholder(shape=(nb_features), dtype=tf.float32)
+    
+    # Racunamo kvadriranu euklidsku udaljenost i uzimamo minimalnih k.
+    dists = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(self.X, self.Q)), 
+                                  axis=1))
+    _, idxs = tf.nn.top_k(-dists, self.k)  
+    
+    self.classes = tf.gather(self.Y, idxs)
+    self.dists = tf.gather(dists, idxs)
+    
+    if weighted:
+       self.w = 1 / self.dists  # Paziti na deljenje sa nulom.
+    else:
+       self.w = tf.fill([k], 1/k)
+    
+    # Svaki red mnozimo svojim glasom i sabiramo glasove po kolonama.
+    w_col = tf.reshape(self.w, (k, 1))
+    self.classes_one_hot = tf.one_hot(self.classes, nb_classes)
+    self.scores = tf.reduce_sum(w_col * self.classes_one_hot, axis=0)
+    
+    # Klasa sa najvise glasova je hipoteza.
+    self.hyp = tf.argmax(self.scores)
+  
+  # Ako imamo odgovore za upit racunamo i accuracy.
+  def predict(self, query_data):
+    
+    with tf.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+     
+      nb_queries = query_data['x'].shape[0]
+      
+      # Pokretanje na svih 10000 primera bi trajalo predugo,
+      # pa pokrecemo samo prvih 100.
+     # nb_queries = 100
+      
+      matches = 0
+      for i in range(nb_queries):
+        hyp_val = sess.run(self.hyp, feed_dict = {self.X: self.data['x'], 
+                                                  self.Y: self.data['y'], 
+                                                 self.Q: query_data['x'][i]})
+        if query_data['y'] is not None:
+          actual = query_data['y'][i]
+          match = (hyp_val == actual)
+          if match:
+            matches += 1
+          if i % 10 == 0:
+            print('Test example: {}/{}| Predicted: {}| Actual: {}| Match: {}'
+                 .format(i+1, nb_queries, hyp_val, actual, match))
+      
+      accuracy = matches / nb_queries
+      print('{} matches out of {} examples'.format(matches, nb_queries))
+
+      # Generisemo grid.
+      step_size = 0.01
+      x1, x2 = np.meshgrid(np.arange(min(X[:, 0]), max(X[:, 0]), 
+                                 step_size),
+                            np.arange(min(X[:, 1]), max(X[:, 1]), 
+                                 step_size))
+      x_feed = np.vstack((x1.flatten(), x2.flatten())).T
+
+    
+
+      # Crtamo contour plot.
+      from matplotlib.colors import LinearSegmentedColormap
+      classes_cmap = LinearSegmentedColormap.from_list('classes_cmap', 
+                                                   ['lightblue', 
+                                                    'lightgreen', 
+                                                    'lightyellow'])
+      
+      hyps = np.zeros((x1.shape[0], x1.shape[1]), dtype=np.int8)
+      for i in range(x1.shape[0]):
+        for j in range(x1.shape[1]):
+            #pravimo plot_q kako bismo uzeli konkretan red  za upit
+            plot_q = np.array([x1[i][j], x2[i][j]]) # ovde mozda transportujemo 
+            #ovde u hyps matricu upisujem vrednosti tj 1 ili 0 za gadjanje da bih kasnije crtao
+            hyps[i][j] = sess.run(self.hyp, feed_dict = {self.X: X, 
+                                                  self.Y: y, 
+                                                 self.Q: plot_q})
+
+
+
+      plt.contourf(x1, x2, hyps, cmap=classes_cmap, alpha=0.7)
+
+      # Crtamo sve podatke preko.
+      idxs_0 = y == 0.0
+      idxs_1 = y == 1.0
+      plt.scatter(X[idxs_0, 0], X[idxs_0, 1], c='b', 
+                   edgecolors='k', label='Klasa 0')
+      plt.scatter(X[idxs_1, 0],X[idxs_1, 1], c='g', 
+                    edgecolors='k', label='Klasa 1')
+      plt.legend()
+
+      return accuracy
+
+
+#ucitavanje podataka
+f = pd.read_csv('/content/social_network_ads.csv')
+#file.head()
+
+#X - input, sve osim kolone purchased
+#y - outut, cuvamo vrednosti purchased
+X = f.drop(columns=['Purchased', 'Gender', 'User ID']).values
+#normalizujem
+X = (X-np.mean(X, axis=0))/np.std(X, axis=0)
+
+y = f['Purchased'].values
+
+
+
+
+train_ratio = 0.8
+nb_samples = 400
+
+nb_train = int(train_ratio * nb_samples)
+data_train = dict()
+data_train['x'] = X[:nb_train]
+data_train['y'] = y[:nb_train]
+
+nb_test = nb_samples - nb_train
+data_test = dict()
+data_test['x'] = X[nb_train:]
+data_test['y'] = y[nb_train:]
+
+
+nb_features = 2
+nb_classes = 2
+k = 3
+
+knn = KNN(nb_features, nb_classes, data_train, k, weighted=False)
+
+accuracy = knn.predict(data_test)
+
+
+
